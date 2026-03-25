@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass
-from chess import Board, WHITE, BLACK, WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK
+from board_rep import Board, WHITE, BLACK, WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK
 
 PIECE_VALUES = {
     WP: 100,
