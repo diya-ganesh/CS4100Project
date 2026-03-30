@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from project.board import Board, WHITE
 from project.evals.base import Evaluator
-from base import SearchResult, Searcher
+from project.search.base import SearchResult, Searcher
 
 
 MATE_SCORE = 100_000

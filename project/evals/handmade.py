@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from board import Board
-from base import Evaluator
+from project.evals.base import Evaluator
 
 
 @dataclass(slots=True)

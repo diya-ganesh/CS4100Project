@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from project.board import Board, WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK
-from base import Evaluator
+from project.evals.base import Evaluator
 
 
 PIECE_VALUES = {

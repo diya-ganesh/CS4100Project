@@ -5,7 +5,7 @@ import time
 
 from project.board import Board, WHITE
 from project.evals.base import Evaluator
-from base import SearchResult, Searcher
+from project.search.base import SearchResult, Searcher
 
 
 
