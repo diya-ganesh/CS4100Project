@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import time
 
-from project.board import Board, WHITE
+from project.board import Board, WHITE, FLAG_CAPTURE, mv_flags
 from project.evals.base import Evaluator
 from project.search.base import SearchResult, Searcher
 
@@ -259,7 +259,8 @@ class AlphaBetaSearcher(Searcher):
             return terminal, []
 
         if depth <= 0:
-            return evaluator.evaluate(board), []
+            # return evaluator.evaluate(board), []
+            return self._quiescence(board, evaluator, alpha, beta, ply), []
 
         moves = self._ordered_moves(board, evaluator)
 
@@ -329,3 +330,51 @@ class AlphaBetaSearcher(Searcher):
                 break
 
         return best_score, best_line
+
+    def _quiescence(
+        self,
+        board: Board,
+        evaluator: Evaluator,
+        alpha: int,
+        beta: int,
+        ply: int,
+    ) -> int:
+        # baseline score for the current position
+        base_score = evaluator.evaluate(board)
+        if board.stm == WHITE:
+            if base_score >= beta:
+                return base_score
+            if base_score > alpha:
+                alpha = base_score
+        else:
+            if base_score <= alpha:
+                return base_score
+            if base_score < beta:
+                beta = base_score
+        
+        best_score = base_score
+
+        # explore capture chains 
+        for move in board.generate_legal():
+            if not (mv_flags(move) & FLAG_CAPTURE):
+                continue
+            board.make_move(move)
+            score = self._quiescence(board, evaluator, alpha, beta, ply + 1)
+            board.unmake_move()
+
+            if board.stm == WHITE:
+                if score > best_score:
+                    best_score = score
+                if score >= beta:
+                    return score
+                if score > alpha:
+                    alpha = score
+            else:
+                if score < best_score:
+                    best_score = score
+                if score <= alpha:
+                    return score
+                if score < beta:
+                    beta = score
+
+        return best_score

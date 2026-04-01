@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from itertools import combinations
+import time
 
 from board import Board, WHITE
 
@@ -169,7 +170,9 @@ def run_arena(
     if bots is None:
         bots = default_bots()
 
+    start = time.perf_counter()
     results, standings = round_robin(bots, games_per_pair=games_per_pair, max_plies=max_plies)
+    print(f"TIME ELAPSED: {time.perf_counter() - start:.2f}")
 
     print("MATCH RESULTS")
     for result in results:
