@@ -67,9 +67,12 @@ def mv_flags(m: int) -> int:
 KNIGHT_ATK = [0] * 64
 KING_ATK = [0] * 64
 
+MASK64 = 0xFFFFFFFFFFFFFFFF
+
 def _init_leapers():
     for sq in range(64):
         b = bb(sq)
+
         n = 0
         n |= (b << 17) & NOT_A
         n |= (b << 15) & NOT_H
@@ -79,7 +82,7 @@ def _init_leapers():
         n |= (b >> 15) & NOT_A
         n |= (b >> 10) & NOT_GH
         n |= (b >> 6) & NOT_AB
-        KNIGHT_ATK[sq] = n
+        KNIGHT_ATK[sq] = n & MASK64
 
         k = 0
         k |= (b << 8)
@@ -90,7 +93,7 @@ def _init_leapers():
         k |= (b << 7) & NOT_H
         k |= (b >> 7) & NOT_A
         k |= (b >> 9) & NOT_H
-        KING_ATK[sq] = k
+        KING_ATK[sq] = k & MASK64
 
 _init_leapers()
 

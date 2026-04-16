@@ -8,7 +8,6 @@ from project.evals.base import Evaluator
 from project.search.base import SearchResult, Searcher
 
 
-
 MATE_SCORE = 100_000
 
 
@@ -26,6 +25,7 @@ def _terminal_score(board: Board, ply: int) -> int | None:
 
 @dataclass(slots=True)
 class _BeamNode:
+    fen: str
     path: tuple[int, ...]
     score: int
 
@@ -47,7 +47,13 @@ class BeamSearcher(Searcher):
         return evaluator.evaluate(board)
 
     def _score_move(self, board: Board, evaluator: Evaluator, move: int, ply: int) -> int:
-        board.make_move(move)
+        ok = board.make_move(move)
+        if not ok:
+            raise RuntimeError(
+                f"BeamSearcher._score_move received illegal move "
+                f"{board.move_to_uci(move)} from fen {board.fen()}"
+            )
+
         score = self._score_position(board, evaluator, ply)
         board.unmake_move()
         return score
@@ -62,19 +68,6 @@ class BeamSearcher(Searcher):
 
         scored.sort(key=lambda item: item[0], reverse=(board.stm == WHITE))
         return [move for _, move in scored]
-
-    def _apply_path(self, board: Board, path: tuple[int, ...]) -> int:
-        applied = 0
-        for move in path:
-            ok = board.make_move(move)
-            if not ok:
-                break
-            applied += 1
-        return applied
-
-    def _undo_n(self, board: Board, count: int) -> None:
-        for _ in range(count):
-            board.unmake_move()
 
     def search(
         self,
@@ -99,6 +92,8 @@ class BeamSearcher(Searcher):
             )
 
         root_is_white = (board.stm == WHITE)
+        root_fen = board.fen()
+
         ordered_root = self._ordered_moves(board, evaluator, 1)
 
         beam: list[_BeamNode] = []
@@ -108,15 +103,27 @@ class BeamSearcher(Searcher):
             if deadline is not None and time.perf_counter() >= deadline:
                 break
 
-            score = self._score_move(board, evaluator, move, 1)
-            beam.append(_BeamNode(path=(move,), score=score))
+            child = Board(root_fen)
+            ok = child.make_move(move)
+            if not ok:
+                continue
+
+            score = self._score_position(child, evaluator, 1)
+            beam.append(
+                _BeamNode(
+                    fen=child.fen(),
+                    path=(move,),
+                    score=score,
+                )
+            )
             nodes_visited += 1
 
         if not beam:
             fallback = legal[0]
+            fallback_score = self._score_move(board, evaluator, fallback, 1)
             return SearchResult(
                 move=fallback,
-                score=self._score_move(board, evaluator, fallback, 1),
+                score=fallback_score,
                 depth_reached=0,
                 nodes=nodes_visited,
                 pv=[fallback],
@@ -133,60 +140,76 @@ class BeamSearcher(Searcher):
                 timed_out = True
                 break
 
-            candidates: list[_BeamNode] = []
+            next_beam: list[_BeamNode] = []
 
             for node in beam:
                 if deadline is not None and time.perf_counter() >= deadline:
                     timed_out = True
                     break
 
-                applied = self._apply_path(board, node.path)
-                if applied != len(node.path):
-                    self._undo_n(board, applied)
-                    continue
-
-                next_moves = self._ordered_moves(board, evaluator, depth)
+                current = Board(node.fen)
+                next_moves = self._ordered_moves(current, evaluator, depth)
                 next_moves = next_moves[:self.expand_width]
 
                 if not next_moves:
-                    leaf_score = self._score_position(board, evaluator, depth)
-                    candidates.append(_BeamNode(path=node.path, score=leaf_score))
+                    leaf_score = self._score_position(current, evaluator, depth)
+                    next_beam.append(
+                        _BeamNode(
+                            fen=current.fen(),
+                            path=node.path,
+                            score=leaf_score,
+                        )
+                    )
                     nodes_visited += 1
-                else:
-                    for move in next_moves:
-                        if deadline is not None and time.perf_counter() >= deadline:
-                            timed_out = True
-                            break
+                    continue
 
-                        board.make_move(move)
-                        leaf_score = self._score_position(board, evaluator, depth)
-                        board.unmake_move()
+                maximizing = (current.stm == WHITE)
+                chosen_child: _BeamNode | None = None
 
-                        candidates.append(_BeamNode(path=node.path + (move,), score=leaf_score))
-                        nodes_visited += 1
+                for move in next_moves:
+                    if deadline is not None and time.perf_counter() >= deadline:
+                        timed_out = True
+                        break
 
-                self._undo_n(board, applied)
+                    child = Board(node.fen)
+                    ok = child.make_move(move)
+                    if not ok:
+                        continue
+
+                    child_score = self._score_position(child, evaluator, depth)
+                    candidate = _BeamNode(
+                        fen=child.fen(),
+                        path=node.path + (move,),
+                        score=child_score,
+                    )
+                    nodes_visited += 1
+
+                    if chosen_child is None:
+                        chosen_child = candidate
+                    elif maximizing and candidate.score > chosen_child.score:
+                        chosen_child = candidate
+                    elif (not maximizing) and candidate.score < chosen_child.score:
+                        chosen_child = candidate
 
                 if timed_out:
                     break
 
+                if chosen_child is not None:
+                    next_beam.append(chosen_child)
+
             if timed_out:
                 break
 
-            if not candidates:
+            if not next_beam:
                 break
 
-            candidates.sort(key=lambda node: node.score, reverse=root_is_white)
-            beam = candidates[:self.beam_width]
-
-            if beam:
-                best = beam[0]
-                depth_reached = depth
-            else:
-                break
+            next_beam.sort(key=lambda node: node.score, reverse=root_is_white)
+            beam = next_beam[:self.beam_width]
+            best = beam[0]
+            depth_reached = depth
 
         return SearchResult(
-            move=best.path[0],
+            move=best.path[0] if best.path else legal[0],
             score=best.score,
             depth_reached=depth_reached,
             nodes=nodes_visited,
