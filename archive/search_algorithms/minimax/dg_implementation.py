@@ -3,7 +3,7 @@ import os
 import time # for iterative deepening 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from board_rep import (
+from archive.board_representations.board_rep import (
     WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK, 
     Board, WHITE, BLACK
 )
