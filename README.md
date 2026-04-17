@@ -142,3 +142,11 @@ Bots are named `<searcher>__<evaluator>`. Examples:
 > **Testing**: The `archive/tests/` directory contains unit tests for early board representation prototypes. There are no automated tests for the production `project/` code; correctness was validated manually via PERFT move-count verification and interactive play.
 
 > **Performance**: All search algorithms enforce a 0.1-second per-move time limit, configurable in [`project/app.py`](project/app.py).
+
+---
+
+## Sources for Project Executive Summary
+[1] Shannon, C.E. ”Programming a Computer for Playing Chess.” *Philosophical Magazine*, 41(314), 1950. Foundational mini-max framework; theoretical basis for all search-based chess engines.
+[2] Knuth, D.E. and Moore, R.W. ”An Analysis of Alpha-Beta Pruning.” *Artificial Intelligence*, Vol. 6, No. 4, pp. 293–326, 1975. Proves correctness and efficiency bounds for alpha-beta.
+[3] Pastukhov, S. ”Playing Board Games with the Predict Results of Beam Search Algorithm.” *arXiv*, 2404.16072, 2024. Applies beam search to two-player board games; evaluates tradeoffs vs. full-tree methods.
+[4] Silver, D. et al. ”A General Reinforcement Learning Algorithm that Masters Chess, Shogi, and Go Through Self-Play.” *Science*, 362(6419), 2018. AlphaZero; establishes neural network as contrast to classical search.

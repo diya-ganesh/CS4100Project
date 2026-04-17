@@ -16,7 +16,7 @@ archive/
 │   ├── minimax/             # Diya Ganesh's minimax initialization
 │   └── beam_search.py       # Early beam search draft
 └── tests/
-    └── test_js_board_rep.py # Unit tests for the JS board prototype
+    └── test_js_board_rep.py # Unit tests for the John Sargent board prototype
 ```
 
 The production code evolved from lessons learned here — the final bitboard engine in `project/board.py` replaced all three board prototypes.
